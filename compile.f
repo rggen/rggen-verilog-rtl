@@ -1,4 +1,6 @@
++incdir+${RGGEN_VERILOG_RTL_ROOT}
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_mux.v
+${RGGEN_VERILOG_RTL_ROOT}/rggen_bit_field.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_bit_field_rc.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_bit_field_reserved.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_bit_field_ro.v
