@@ -5,17 +5,18 @@ module rggen_axi4lite_adapter #(
   parameter                     BUS_WIDTH           = 32,
   parameter                     REGISTERS           = 1,
   parameter                     PRE_DECODE          = 0,
-  parameter [ADDRESS_WIDTH-1:0] BASE_ADDRESS        = '0,
+  parameter [ADDRESS_WIDTH-1:0] BASE_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
   parameter                     BYTE_SIZE           = 256,
   parameter                     ERROR_STATUS        = 0,
-  parameter [BUS_WIDTH-1:0]     DEFAULT_READ_DATA   = '0,
-  parameter                     WRITE_FIRST         = 1
+  parameter [BUS_WIDTH-1:0]     DEFAULT_READ_DATA   = {BUS_WIDTH{1'b0}},
+  parameter                     WRITE_FIRST         = 1,
+  parameter                     ACTUAL_ID_WIDTH     = (ID_WIDTH > 0) ? ID_WIDTH : 1
 )(
   input                             i_clk,
   input                             i_rst_n,
   input                             i_awvalid,
   output                            o_awready,
-  input   [actual_id_width()-1:0]   i_awid,
+  input   [ACTUAL_ID_WIDTH-1:0]     i_awid,
   input   [ADDRESS_WIDTH-1:0]       i_awaddr,
   input   [2:0]                     i_awprot,
   input                             i_wvalid,
@@ -24,16 +25,16 @@ module rggen_axi4lite_adapter #(
   input   [BUS_WIDTH/8-1:0]         i_wstrb,
   output                            o_bvalid,
   input                             i_bready,
-  output  [actual_id_width()-1:0]   o_bid,
+  output  [ACTUAL_ID_WIDTH-1:0]     o_bid,
   output  [1:0]                     o_bresp,
   input                             i_arvalid,
   output                            o_arready,
-  input   [actual_id_width()-1:0]   i_arid,
+  input   [ACTUAL_ID_WIDTH-1:0]     i_arid,
   input   [ADDRESS_WIDTH-1:0]       i_araddr,
   input   [2:0]                     i_arprot,
   output                            o_rvalid,
   input                             i_rready,
-  output  [actual_id_width()-1:0]   o_rid,
+  output  [ACTUAL_ID_WIDTH-1:0]     o_rid,
   output  [1:0]                     o_rresp,
   output  [BUS_WIDTH-1:0]           o_rdata,
   output                            o_register_valid,
@@ -46,10 +47,6 @@ module rggen_axi4lite_adapter #(
   input   [2*REGISTERS-1:0]         i_register_status,
   input   [BUS_WIDTH*REGISTERS-1:0] i_register_read_data
 );
-  function automatic integer actual_id_width();
-    actual_id_width = (ID_WIDTH == 0) ? 1 : ID_WIDTH;
-  endfunction
-
   localparam  [1:0] RGGEN_WRITE           = 2'b11;
   localparam  [1:0] RGGEN_READ            = 2'b10;
   localparam  [1:0] IDLE                  = 2'b00;
@@ -95,7 +92,7 @@ module rggen_axi4lite_adapter #(
                                                 : r_write_data;
   assign  w_bus_strobe
     = ((r_state == IDLE) && w_request_valid[0]) ? i_wstrb
-                                                : r_state;
+                                                : r_strobe;
 
   assign  w_request_valid = get_request_valid(i_awvalid, i_wvalid, i_arvalid);
   assign  w_request_ready = get_request_ready(r_state, i_awvalid, i_wvalid, i_arvalid);
@@ -105,7 +102,7 @@ module rggen_axi4lite_adapter #(
       r_access      <= w_bus_access;
       r_address     <= w_bus_address;
       r_write_data  <= w_bus_write_data;
-      r_state       <= w_bus_strobe;
+      r_strobe      <= w_bus_strobe;
     end
   end
 
@@ -160,11 +157,11 @@ module rggen_axi4lite_adapter #(
   endfunction
 
   //  Response
-  reg   [1:0]                   r_response_valid;
-  wire                          w_response_ack;
-  wire  [actual_id_width()-1:0] w_id;
-  reg   [BUS_WIDTH-1:0]         r_read_data;
-  reg   [1:0]                   r_status;
+  reg   [1:0]                 r_response_valid;
+  wire                        w_response_ack;
+  wire  [ACTUAL_ID_WIDTH-1:0] w_id;
+  reg   [BUS_WIDTH-1:0]       r_read_data;
+  reg   [1:0]                 r_status;
 
   assign  o_bvalid  = r_response_valid[0];
   assign  o_bid     = w_id;
