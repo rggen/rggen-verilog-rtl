@@ -30,16 +30,15 @@ module rggen_adapter_common #(
   input   [BUS_WIDTH*REGISTERS-1:0] i_register_read_data
 );
   localparam  [1:0] DEFAULT_STATUS  = (ERROR_STATUS != 0) ? 2'b10 : 2'b00;
-  localparam        RESPONSES       = REGISTERS + 1;
 
-  genvar                          i;
-  reg                             r_busy;
-  wire                            w_inside_range;
-  wire                            w_bus_ready;
-  wire  [RESPONSES-1:0]           w_ready;
-  wire  [REGISTERS-1:0]           w_active;
-  wire  [2*RESPONSES-1:0]         w_status;
-  wire  [BUS_WIDTH*RESPONSES-1:0] w_read_data;
+  genvar                i;
+  reg                   r_busy;
+  wire                  w_inside_range;
+  wire                  w_register_ready;
+  wire                  w_register_inactive;
+  wire  [1:0]           w_register_status;
+  wire  [BUS_WIDTH-1:0] w_register_read_data;
+  wire                  w_bus_ready;
 
   //  State
   always @(posedge i_clk or negedge i_rst_n) begin
@@ -77,35 +76,29 @@ module rggen_adapter_common #(
   assign  o_register_strobe     = i_bus_strobe;
 
   //  Response
-  generate for (i = 0;i < REGISTERS;i = i + 1) begin : g_response
-    assign  w_ready[i]                          = w_inside_range && i_register_ready[i];
-    assign  w_active[i]                         = w_inside_range && i_register_active[i];
-    assign  w_status[2*i+:2]                    = i_register_status[2*i+:2];
-    assign  w_read_data[BUS_WIDTH*i+:BUS_WIDTH] = i_register_read_data[BUS_WIDTH*i+:BUS_WIDTH];
-  end endgenerate
+  assign  o_bus_ready     = w_bus_ready;
+  assign  o_bus_status    = (w_register_inactive) ? DEFAULT_STATUS    : w_register_status;
+  assign  o_bus_read_data = (w_register_inactive) ? DEFAULT_READ_DATA : w_register_read_data;
 
-  assign  w_ready[RESPONSES-1]                            = ~|{1'b0, w_active};
-  assign  w_status[2*(RESPONSES-1)+:2]                    = DEFAULT_STATUS;
-  assign  w_read_data[BUS_WIDTH*(RESPONSES-1)+:BUS_WIDTH] = DEFAULT_READ_DATA;
-
-  assign  o_bus_ready = w_bus_ready;
-  assign  w_bus_ready = |w_ready;
+  assign  w_register_inactive = (i_register_active == {REGISTERS{1'b0}}) || (!w_inside_range);
+  assign  w_register_ready    = (i_register_ready  != {REGISTERS{1'b0}});
+  assign  w_bus_ready         = w_register_ready || w_register_inactive;
 
   rggen_mux #(
     .WIDTH    (2          ),
-    .ENTRIES  (RESPONSES  )
+    .ENTRIES  (REGISTERS  )
   ) u_status_mux (
-    .i_select (w_ready      ),
-    .i_data   (w_status     ),
-    .o_data   (o_bus_status )
+    .i_select (i_register_active  ),
+    .i_data   (i_register_status  ),
+    .o_data   (w_register_status  )
   );
 
   rggen_mux #(
     .WIDTH    (BUS_WIDTH  ),
-    .ENTRIES  (RESPONSES  )
+    .ENTRIES  (REGISTERS  )
   ) u_read_data_mux (
-    .i_select (w_ready          ),
-    .i_data   (w_read_data      ),
-    .o_data   (o_bus_read_data  )
+    .i_select (i_register_active    ),
+    .i_data   (i_register_read_data ),
+    .o_data   (w_register_read_data )
   );
 endmodule
