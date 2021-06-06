@@ -26,4 +26,7 @@
 `define rggen_slice(EXPRESSION, WIDTH, INDEX) \
 (((EXPRESSION) >> ((WIDTH) * (INDEX))) & {(WIDTH){1'b1}})
 
+`define rggen_clip_width(WIDTH) \
+(((WIDTH) > 0) ? (WIDTH) : 1)
+
 `endif

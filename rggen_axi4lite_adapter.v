@@ -1,3 +1,4 @@
+`include  "rggen_rtl_macros.vh"
 module rggen_axi4lite_adapter #(
   parameter                     ID_WIDTH            = 0,
   parameter                     ADDRESS_WIDTH       = 8,
@@ -10,7 +11,7 @@ module rggen_axi4lite_adapter #(
   parameter                     ERROR_STATUS        = 0,
   parameter [BUS_WIDTH-1:0]     DEFAULT_READ_DATA   = {BUS_WIDTH{1'b0}},
   parameter                     WRITE_FIRST         = 1,
-  parameter                     ACTUAL_ID_WIDTH     = (ID_WIDTH > 0) ? ID_WIDTH : 1
+  parameter                     ACTUAL_ID_WIDTH     = `rggen_clip_width(ID_WIDTH)
 )(
   input                             i_clk,
   input                             i_rst_n,
@@ -53,15 +54,94 @@ module rggen_axi4lite_adapter #(
   localparam  [1:0] BUS_ACCESS_BUSY       = 2'b01;
   localparam  [1:0] WAIT_FOR_RESPONSE_ACK = 2'b10;
 
-  wire                      w_bus_valid;
-  wire  [1:0]               w_bus_access;
-  wire  [ADDRESS_WIDTH-1:0] w_bus_address;
-  wire  [BUS_WIDTH-1:0]     w_bus_write_data;
-  wire  [BUS_WIDTH/8-1:0]   w_bus_strobe;
-  wire                      w_bus_ready;
-  wire  [1:0]               w_bus_status;
-  wire  [BUS_WIDTH-1:0]     w_bus_read_data;
-  reg   [1:0]               r_state;
+  wire                        w_awvalid;
+  wire                        w_awready;
+  wire  [ACTUAL_ID_WIDTH-1:0] w_awid;
+  wire  [ADDRESS_WIDTH-1:0]   w_awaddr;
+  wire  [2:0]                 w_awprot;
+  wire                        w_wvalid;
+  wire                        w_wready;
+  wire  [BUS_WIDTH-1:0]       w_wdata;
+  wire  [BUS_WIDTH/8-1:0]     w_wstrb;
+  wire                        w_bvalid;
+  wire                        w_bready;
+  wire  [ACTUAL_ID_WIDTH-1:0] w_bid;
+  wire  [1:0]                 w_bresp;
+  wire                        w_arvalid;
+  wire                        w_arready;
+  wire  [ACTUAL_ID_WIDTH-1:0] w_arid;
+  wire  [ADDRESS_WIDTH-1:0]   w_araddr;
+  wire  [2:0]                 w_arprot;
+  wire                        w_rvalid;
+  wire                        w_rready;
+  wire  [ACTUAL_ID_WIDTH-1:0] w_rid;
+  wire  [1:0]                 w_rresp;
+  wire  [BUS_WIDTH-1:0]       w_rdata;
+  wire                        w_bus_valid;
+  wire  [1:0]                 w_bus_access;
+  wire  [ADDRESS_WIDTH-1:0]   w_bus_address;
+  wire  [BUS_WIDTH-1:0]       w_bus_write_data;
+  wire  [BUS_WIDTH/8-1:0]     w_bus_strobe;
+  wire                        w_bus_ready;
+  wire  [1:0]                 w_bus_status;
+  wire  [BUS_WIDTH-1:0]       w_bus_read_data;
+  reg   [1:0]                 r_state;
+
+  //  Buffer
+  rggen_skid_buffer #(
+    .ID_WIDTH       (ID_WIDTH       ),
+    .ADDRESS_WIDTH  (ADDRESS_WIDTH  ),
+    .BUS_WIDTH      (BUS_WIDTH      )
+  ) u_buffer (
+    .i_clk      (i_clk      ),
+    .i_rst_n    (i_rst_n    ),
+    .i_awvalid  (i_awvalid  ),
+    .o_awready  (o_awready  ),
+    .i_awid     (i_awid     ),
+    .i_awaddr   (i_awaddr   ),
+    .i_awprot   (i_awprot   ),
+    .i_wvalid   (i_wvalid   ),
+    .o_wready   (o_wready   ),
+    .i_wdata    (i_wdata    ),
+    .i_wstrb    (i_wstrb    ),
+    .o_bvalid   (o_bvalid   ),
+    .i_bready   (i_bready   ),
+    .o_bid      (o_bid      ),
+    .o_bresp    (o_bresp    ),
+    .i_arvalid  (i_arvalid  ),
+    .o_arready  (o_arready  ),
+    .i_arid     (i_arid     ),
+    .i_araddr   (i_araddr   ),
+    .i_arprot   (i_arprot   ),
+    .o_rvalid   (o_rvalid   ),
+    .i_rready   (i_rready   ),
+    .o_rid      (o_rid      ),
+    .o_rresp    (o_rresp    ),
+    .o_rdata    (o_rdata    ),
+    .o_awvalid  (w_awvalid  ),
+    .i_awready  (w_awready  ),
+    .o_awid     (w_awid     ),
+    .o_awaddr   (w_awaddr   ),
+    .o_awprot   (w_awprot   ),
+    .o_wvalid   (w_wvalid   ),
+    .i_wready   (w_wready   ),
+    .o_wdata    (w_wdata    ),
+    .o_wstrb    (w_wstrb    ),
+    .i_bvalid   (w_bvalid   ),
+    .o_bready   (w_bready   ),
+    .i_bid      (w_bid      ),
+    .i_bresp    (w_bresp    ),
+    .o_arvalid  (w_arvalid  ),
+    .i_arready  (w_arready  ),
+    .o_arid     (w_arid     ),
+    .o_araddr   (w_araddr   ),
+    .o_arprot   (w_arprot   ),
+    .i_rvalid   (w_rvalid   ),
+    .o_rready   (w_rready   ),
+    .i_rid      (w_rid      ),
+    .i_rresp    (w_rresp    ),
+    .i_rdata    (w_rdata    )
+  );
 
   //  Request
   wire  [1:0]               w_request_valid;
@@ -71,36 +151,44 @@ module rggen_axi4lite_adapter #(
   reg   [BUS_WIDTH-1:0]     r_write_data;
   reg   [BUS_WIDTH/8-1:0]   r_strobe;
 
-  assign  o_awready = w_request_ready[0];
-  assign  o_wready  = w_request_ready[1];
-  assign  o_arready = w_request_ready[2];
+  assign  w_awready = w_request_ready[0];
+  assign  w_wready  = w_request_ready[1];
+  assign  w_arready = w_request_ready[2];
 
-  assign  w_bus_valid
-    = (r_state == BUS_ACCESS_BUSY) ? 1'b1
-    : (r_state == IDLE           ) ? |w_request_valid
-                                   : 1'b0;
+  assign  w_bus_valid =
+    ((r_state == IDLE) && (w_request_valid != 2'b00)) ||
+    ((r_state == BUS_ACCESS_BUSY));
   assign  w_bus_access
     = ((r_state == IDLE) && w_request_valid[0]) ? RGGEN_WRITE
     : ((r_state == IDLE) && w_request_valid[1]) ? RGGEN_READ
                                                 : r_access;
   assign  w_bus_address
-    = ((r_state == IDLE) && w_request_valid[0]) ? i_awaddr
-    : ((r_state == IDLE) && w_request_valid[1]) ? i_araddr
+    = ((r_state == IDLE) && w_request_valid[0]) ? w_awaddr
+    : ((r_state == IDLE) && w_request_valid[1]) ? w_araddr
                                                 : r_address;
   assign  w_bus_write_data
-    = ((r_state == IDLE) && w_request_valid[0]) ? i_wdata
+    = ((r_state == IDLE) && w_request_valid[0]) ? w_wdata
                                                 : r_write_data;
   assign  w_bus_strobe
-    = ((r_state == IDLE) && w_request_valid[0]) ? i_wstrb
+    = ((r_state == IDLE) && w_request_valid[0]) ? w_wstrb
                                                 : r_strobe;
 
-  assign  w_request_valid = get_request_valid(i_awvalid, i_wvalid, i_arvalid);
-  assign  w_request_ready = get_request_ready(r_state, i_awvalid, i_wvalid, i_arvalid);
+  assign  w_request_valid = get_request_valid(w_awvalid, w_wvalid, w_arvalid);
+  assign  w_request_ready = get_request_ready(r_state, w_awvalid, w_wvalid, w_arvalid);
+
+  always @(posedge i_clk or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+      r_access  <= 2'b00;
+      r_address <= {ADDRESS_WIDTH{1'b0}};
+    end
+    else if ((r_state == IDLE) && (|w_request_valid)) begin
+      r_access  <= w_bus_access;
+      r_address <= w_bus_address;
+    end
+  end
 
   always @(posedge i_clk) begin
     if ((r_state == IDLE) && (|w_request_valid)) begin
-      r_access      <= w_bus_access;
-      r_address     <= w_bus_address;
       r_write_data  <= w_bus_write_data;
       r_strobe      <= w_bus_strobe;
     end
@@ -163,17 +251,17 @@ module rggen_axi4lite_adapter #(
   reg   [BUS_WIDTH-1:0]       r_read_data;
   reg   [1:0]                 r_status;
 
-  assign  o_bvalid  = r_response_valid[0];
-  assign  o_bid     = w_id;
-  assign  o_bresp   = r_status;
-  assign  o_rvalid  = r_response_valid[1];
-  assign  o_rid     = w_id;
-  assign  o_rdata   = r_read_data;
-  assign  o_rresp   = r_status;
+  assign  w_bvalid  = r_response_valid[0];
+  assign  w_bid     = w_id;
+  assign  w_bresp   = r_status;
+  assign  w_rvalid  = r_response_valid[1];
+  assign  w_rid     = w_id;
+  assign  w_rdata   = r_read_data;
+  assign  w_rresp   = r_status;
 
   assign  w_response_ack  =
-    (r_response_valid[0] && i_bready) ||
-    (r_response_valid[1] && i_rready);
+    (r_response_valid[0] && w_bready) ||
+    (r_response_valid[1] && w_rready);
   always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
       r_response_valid  <= 2'b00;
@@ -199,11 +287,11 @@ module rggen_axi4lite_adapter #(
       if (!i_rst_n) begin
         r_id  <= {ID_WIDTH{1'b0}};
       end
-      else if (i_awvalid && w_request_ready[0]) begin
-        r_id  <= i_awid;
+      else if (w_awvalid && w_awready) begin
+        r_id  <= w_awid;
       end
-      else if (i_arvalid && w_request_ready[2]) begin
-        r_id  <= i_arid;
+      else if (w_arvalid && w_arready) begin
+        r_id  <= w_arid;
       end
     end
   end
