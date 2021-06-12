@@ -48,11 +48,8 @@ module rggen_axi4lite_adapter #(
   input   [2*REGISTERS-1:0]         i_register_status,
   input   [BUS_WIDTH*REGISTERS-1:0] i_register_read_data
 );
-  localparam  [1:0] RGGEN_WRITE           = 2'b11;
-  localparam  [1:0] RGGEN_READ            = 2'b10;
-  localparam  [1:0] IDLE                  = 2'b00;
-  localparam  [1:0] BUS_ACCESS_BUSY       = 2'b01;
-  localparam  [1:0] WAIT_FOR_RESPONSE_ACK = 2'b10;
+  localparam  [1:0] RGGEN_WRITE = 2'b11;
+  localparam  [1:0] RGGEN_READ  = 2'b10;
 
   wire                        w_awvalid;
   wire                        w_awready;
@@ -85,7 +82,6 @@ module rggen_axi4lite_adapter #(
   wire                        w_bus_ready;
   wire  [1:0]                 w_bus_status;
   wire  [BUS_WIDTH-1:0]       w_bus_read_data;
-  reg   [1:0]                 r_state;
 
   //  Buffer
   rggen_skid_buffer #(
@@ -143,114 +139,71 @@ module rggen_axi4lite_adapter #(
     .i_rdata    (w_rdata    )
   );
 
-  //  Request
-  wire  [1:0]               w_request_valid;
-  wire  [2:0]               w_request_ready;
-  reg   [1:0]               r_access;
-  reg   [ADDRESS_WIDTH-1:0] r_address;
-  reg   [BUS_WIDTH-1:0]     r_write_data;
-  reg   [BUS_WIDTH/8-1:0]   r_strobe;
-
-  assign  w_awready = w_request_ready[0];
-  assign  w_wready  = w_request_ready[1];
-  assign  w_arready = w_request_ready[2];
-
-  assign  w_bus_valid =
-    ((r_state == IDLE) && (w_request_valid != 2'b00)) ||
-    ((r_state == BUS_ACCESS_BUSY));
-  assign  w_bus_access
-    = ((r_state == IDLE) && w_request_valid[0]) ? RGGEN_WRITE
-    : ((r_state == IDLE) && w_request_valid[1]) ? RGGEN_READ
-                                                : r_access;
-  assign  w_bus_address
-    = ((r_state == IDLE) && w_request_valid[0]) ? w_awaddr
-    : ((r_state == IDLE) && w_request_valid[1]) ? w_araddr
-                                                : r_address;
-  assign  w_bus_write_data
-    = ((r_state == IDLE) && w_request_valid[0]) ? w_wdata
-                                                : r_write_data;
-  assign  w_bus_strobe
-    = ((r_state == IDLE) && w_request_valid[0]) ? w_wstrb
-                                                : r_strobe;
-
-  assign  w_request_valid = get_request_valid(w_awvalid, w_wvalid, w_arvalid);
-  assign  w_request_ready = get_request_ready(r_state, w_awvalid, w_wvalid, w_arvalid);
-
-  always @(posedge i_clk or negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      r_access  <= 2'b00;
-      r_address <= {ADDRESS_WIDTH{1'b0}};
-    end
-    else if ((r_state == IDLE) && (|w_request_valid)) begin
-      r_access  <= w_bus_access;
-      r_address <= w_bus_address;
-    end
-  end
-
-  always @(posedge i_clk) begin
-    if ((r_state == IDLE) && (|w_request_valid)) begin
-      r_write_data  <= w_bus_write_data;
-      r_strobe      <= w_bus_strobe;
-    end
-  end
-
-  function automatic [1:0] get_request_valid;
-    input awvalid;
-    input wvalid;
-    input arvalid;
-
-    reg write_valid;
-    reg read_valid;
-  begin
-    if (WRITE_FIRST) begin
-      write_valid = awvalid && wvalid;
-      read_valid  = arvalid && (!write_valid);
-    end
-    else begin
-      read_valid  = arvalid;
-      write_valid = awvalid && wvalid && (!read_valid);
-    end
-    get_request_valid = {read_valid, write_valid};
-  end
-  endfunction
-
-  function automatic [2:0] get_request_ready;
-    input [1:0] state;
-    input       awvalid;
-    input       wvalid;
-    input       arvalid;
-
-    reg awready;
-    reg wready;
-    reg arready;
-  begin
-    if (WRITE_FIRST) begin
-      awready = wvalid;
-      wready  = awvalid;
-      arready = !(awvalid && wvalid);
-    end
-    else begin
-      arready = 1'b1;
-      awready = (!arvalid) && wvalid;
-      wready  = (!arvalid) && awvalid;
-    end
-
-    if (state == IDLE) begin
-      get_request_ready = {arready, wready, awready};
-    end
-    else begin
-      get_request_ready = 3'b000;
-    end
-  end
-  endfunction
-
-  //  Response
+  wire  [1:0]                 w_request_valid;
+  wire  [2:0]                 w_request_ready;
   reg   [1:0]                 r_response_valid;
   wire                        w_response_ack;
   wire  [ACTUAL_ID_WIDTH-1:0] w_id;
   reg   [BUS_WIDTH-1:0]       r_read_data;
   reg   [1:0]                 r_status;
 
+  //  Request
+  assign  w_awready = w_bus_ready && w_request_ready[0] && (r_response_valid == 2'b00);
+  assign  w_wready  = w_bus_ready && w_request_ready[1] && (r_response_valid == 2'b00);
+  assign  w_arready = w_bus_ready && w_request_ready[2] && (r_response_valid == 2'b00);
+
+  assign  w_bus_valid       = (w_request_valid != 2'b00) && (r_response_valid == 2'b00);
+  assign  w_bus_access      = (w_request_valid[0]) ? RGGEN_WRITE : RGGEN_READ;
+  assign  w_bus_address     = (w_request_valid[0]) ? w_awaddr    : w_araddr;
+  assign  w_bus_write_data  = w_wdata;
+  assign  w_bus_strobe      = w_wstrb;
+
+  assign  w_request_valid = get_request_valid(w_awvalid, w_wvalid, w_arvalid);
+  assign  w_request_ready = get_request_ready(w_awvalid, w_wvalid, w_arvalid);
+
+  function automatic [1:0] get_request_valid;
+    input awvalid;
+    input wvalid;
+    input arvalid;
+
+    reg [1:0] valid;
+  begin
+    if (WRITE_FIRST) begin
+      valid[0]  = awvalid && wvalid;
+      valid[1]  = arvalid && (!valid[0]);
+    end
+    else begin
+      valid[0]  = awvalid && wvalid && (!arvalid);
+      valid[1]  = arvalid;
+    end
+
+    get_request_valid = valid;
+  end
+  endfunction
+
+  function automatic [2:0] get_request_ready;
+    input       awvalid;
+    input       wvalid;
+    input       arvalid;
+
+    reg [2:0] ready;
+  begin
+    if (WRITE_FIRST) begin
+      ready[0]  = wvalid;
+      ready[1]  = awvalid;
+      ready[2]  = !(awvalid && wvalid);
+    end
+    else begin
+      ready[0]  = (!arvalid) && wvalid;
+      ready[1]  = (!arvalid) && awvalid;
+      ready[2]  = 1'b1;
+    end
+
+    get_request_ready = ready;
+  end
+  endfunction
+
+  //  Response
   assign  w_bvalid  = r_response_valid[0];
   assign  w_bid     = w_id;
   assign  w_bresp   = r_status;
@@ -303,35 +256,6 @@ module rggen_axi4lite_adapter #(
     if (w_bus_valid && w_bus_ready) begin
       r_read_data <= w_bus_read_data;
       r_status    <= w_bus_status;
-    end
-  end
-
-  //  State machine
-  always @(posedge i_clk or negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      r_state <= IDLE;
-    end
-    else begin
-      case (r_state)
-        IDLE: begin
-          if (w_bus_valid && w_bus_ready) begin
-            r_state <= WAIT_FOR_RESPONSE_ACK;
-          end
-          else if (w_bus_valid) begin
-            r_state <= BUS_ACCESS_BUSY;
-          end
-        end
-        BUS_ACCESS_BUSY: begin
-          if (w_bus_ready) begin
-            r_state <= WAIT_FOR_RESPONSE_ACK;
-          end
-        end
-        WAIT_FOR_RESPONSE_ACK: begin
-          if (w_response_ack) begin
-            r_state <= IDLE;
-          end
-        end
-      endcase
     end
   end
 
