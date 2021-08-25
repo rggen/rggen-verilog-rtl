@@ -28,7 +28,7 @@ module rggen_bit_field_w01trg #(
           ? i_bit_field_write_mask & ( i_bit_field_write_data)
           : i_bit_field_write_mask & (~i_bit_field_write_data);
     end
-    else begin
+    else if (r_trigger != {WIDTH{1'b0}}) begin
       r_trigger <= {WIDTH{1'b0}};
     end
   end
