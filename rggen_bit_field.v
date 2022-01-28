@@ -10,7 +10,8 @@ module rggen_bit_field #(
   parameter             HW_WRITE_ENABLE_POLARITY  = `RGGEN_ACTIVE_HIGH,
   parameter             HW_SET_WIDTH              = WIDTH,
   parameter             HW_CLEAR_WIDTH            = WIDTH,
-  parameter             STORAGE                   = 1
+  parameter             STORAGE                   = 1,
+  parameter             EXTERNAL_READ_DATA        = 0
 )(
   input                         i_clk,
   input                         i_rst_n,
@@ -138,15 +139,11 @@ module rggen_bit_field #(
       default:                value[1]  = current_value;
     endcase
 
-    if (update[0]) begin
-      get_sw_next_value = value[0];
-    end
-    else if (update[1]) begin
-      get_sw_next_value = value[1];
-    end
-    else begin
-      get_sw_next_value = current_value;
-    end
+    case (update)
+      2'b01:    get_sw_next_value = value[0];
+      2'b10:    get_sw_next_value = value[1];
+      default:  get_sw_next_value = current_value;
+    endcase
   end
   endfunction
 
@@ -188,17 +185,13 @@ module rggen_bit_field #(
 
   wire  [WIDTH-1:0] w_read_data;
   wire  [WIDTH-1:0] w_value;
-  wire  [WIDTH-1:0] w_value_masked;
 
-  assign  o_sw_read_data    = w_read_data;
+  assign  o_sw_read_data    = w_read_data & i_mask;
   assign  o_sw_value        = w_value;
-  assign  o_value           = w_value_masked;
+  assign  o_value           = w_value & i_mask;
   assign  o_value_unmasked  = w_value;
 
-  assign  w_read_data     = (SW_READABLE) ? w_value_masked : {WIDTH{1'b0}};
-  assign  w_value_masked  = w_value & i_mask;
-
-  generate if (STORAGE) begin : g
+  generate if (STORAGE) begin : g_value
     wire              w_sw_write_enable;
     wire  [1:0]       w_sw_update;
     wire              w_sw_write_done;
@@ -251,7 +244,17 @@ module rggen_bit_field #(
 
     assign  w_value = r_value;
   end
-  else begin : g
+  else begin : g_value
     assign  w_value = i_value;
+  end endgenerate
+
+  generate if (!SW_READABLE) begin : g_read_data
+    assign  w_read_data = {WIDTH{1'b0}};
+  end
+  else if (EXTERNAL_READ_DATA) begin : g_read_data
+    assign  w_read_data = i_value;
+  end
+  else begin : g_read_data
+    assign  w_read_data = w_value;
   end endgenerate
 endmodule
