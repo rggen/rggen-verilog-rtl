@@ -11,7 +11,8 @@ module rggen_bit_field #(
   parameter             HW_SET_WIDTH              = WIDTH,
   parameter             HW_CLEAR_WIDTH            = WIDTH,
   parameter             STORAGE                   = 1,
-  parameter             EXTERNAL_READ_DATA        = 0
+  parameter             EXTERNAL_READ_DATA        = 0,
+  parameter             TRIGGER                   = 0
 )(
   input                         i_clk,
   input                         i_rst_n,
@@ -22,6 +23,8 @@ module rggen_bit_field #(
   input   [WIDTH-1:0]           i_sw_write_data,
   output  [WIDTH-1:0]           o_sw_read_data,
   output  [WIDTH-1:0]           o_sw_value,
+  output                        o_write_trigger,
+  output                        o_read_trigger,
   input                         i_hw_write_enable,
   input   [WIDTH-1:0]           i_hw_write_data,
   input   [HW_SET_WIDTH-1:0]    i_hw_set,
@@ -49,7 +52,7 @@ module rggen_bit_field #(
     action[1] = (SW_WRITE_ACTION != `RGGEN_WRITE_NONE);
 
     access[0] = (read_mask  != {WIDTH{1'b0}});
-    access[1] = (write_mask != {WIDTH{1'b0}}) && write_enable && (!write_done);
+    access[1] = (write_mask != {WIDTH{1'b0}}) && (write_enable == SW_WRITE_ENABLE_POLARITY) && (!write_done);
 
     get_sw_update[0]  = valid && action[0] && access[0];
     get_sw_update[1]  = valid && action[1] && access[1];
@@ -63,7 +66,7 @@ module rggen_bit_field #(
 
     reg [2:0] update;
   begin
-    update[0]     = write_enable;
+    update[0]     = write_enable == HW_WRITE_ENABLE_POLARITY;
     update[1]     = set   != {HW_SET_WIDTH{1'b0}};
     update[2]     = clear != {HW_CLEAR_WIDTH{1'b0}};
     get_hw_update = update[0] || update[1] || update[2];
@@ -171,10 +174,14 @@ module rggen_bit_field #(
       set_clear[1]  = {WIDTH{clear[0]}};
     end
 
-    value = (write_enable) ? write_data : current_value;
-    value = (value & (~set_clear[1])) | set_clear[0];
+    if (write_enable == HW_WRITE_ENABLE_POLARITY) begin
+      value = write_data;
+    end
+    else begin
+      value = current_value;
+    end
 
-    get_hw_next_value = value;
+    get_hw_next_value = (value & (~set_clear[1])) | set_clear[0];
   end
   endfunction
 
@@ -183,35 +190,32 @@ module rggen_bit_field #(
 //--------------------------------------------------------------
   localparam  SW_READABLE = SW_READ_ACTION != `RGGEN_READ_NONE;
 
+  wire  [1:0]       w_sw_update;
+  wire              w_sw_write_done;
+  wire              w_hw_update;
+  wire  [1:0]       w_trigger;
   wire  [WIDTH-1:0] w_read_data;
   wire  [WIDTH-1:0] w_value;
 
   assign  o_sw_read_data    = w_read_data & i_mask;
   assign  o_sw_value        = w_value;
+  assign  o_write_trigger   = w_trigger[0];
+  assign  o_read_trigger    = w_trigger[1];
   assign  o_value           = w_value & i_mask;
   assign  o_value_unmasked  = w_value;
 
-  generate if (STORAGE) begin : g_value
-    wire              w_sw_write_enable;
-    wire  [1:0]       w_sw_update;
-    wire              w_sw_write_done;
-    wire              w_hw_write_enable;
-    wire              w_hw_update;
-    wire  [WIDTH-1:0] w_value_next;
-    reg   [WIDTH-1:0] r_value;
+  assign  w_sw_update =
+    get_sw_update(
+      i_sw_valid, i_sw_read_mask, i_sw_write_enable,
+      i_sw_write_mask, w_sw_write_done
+    );
+  assign  w_hw_update =
+    get_hw_update(
+      i_hw_write_enable, i_hw_set, i_hw_clear
+    );
 
-    assign  w_sw_write_enable = i_sw_write_enable == SW_WRITE_ENABLE_POLARITY;
-    assign  w_hw_write_enable = i_hw_write_enable == HW_WRITE_ENABLE_POLARITY;
-
-    assign  w_sw_update =
-      get_sw_update(
-        i_sw_valid, i_sw_read_mask, w_sw_write_enable,
-        i_sw_write_mask, w_sw_write_done
-      );
-    assign  w_hw_update =
-      get_hw_update(w_hw_write_enable, i_hw_set, i_hw_clear);
-
-    if (SW_WRITE_ONCE) begin : g_sw_write_done
+  generate
+    if (STORAGE && SW_WRITE_ONCE) begin : g_sw_write_done
       reg r_sw_write_done;
 
       assign  w_sw_write_done = r_sw_write_done;
@@ -227,34 +231,79 @@ module rggen_bit_field #(
     else begin : g_sw_write_done
       assign  w_sw_write_done = 1'b0;
     end
+  endgenerate
 
-    assign  w_value_next  =
-      get_next_value(
-        w_value, w_sw_update, i_sw_write_mask, i_sw_write_data,
-        w_hw_write_enable, i_hw_write_data, i_hw_set, i_hw_clear
-      );
-    always @(posedge i_clk or negedge i_rst_n) begin
-      if (!i_rst_n) begin
-        r_value <= INITIAL_VALUE;
-      end
-      else if (w_sw_update[0] || w_sw_update[1] || w_hw_update) begin
-        r_value <= w_value_next;
+  generate
+    if (TRIGGER && (SW_WRITE_ACTION != `RGGEN_WRITE_NONE)) begin : g_write_trigger
+      reg r_trigger;
+
+      assign  w_trigger[0]  = r_trigger;
+      always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+          r_trigger <= 1'b0;
+        end
+        else begin
+          r_trigger <= w_sw_update[1];
+        end
       end
     end
+    else begin : g_write_trigger
+      assign  w_trigger[0]  = 1'b0;
+    end
 
-    assign  w_value = r_value;
-  end
-  else begin : g_value
-    assign  w_value = i_value;
-  end endgenerate
+    if (TRIGGER && (SW_WRITE_ACTION != `RGGEN_READ_NONE)) begin : g_read_trigger
+      reg r_trigger;
 
-  generate if (!SW_READABLE) begin : g_read_data
-    assign  w_read_data = {WIDTH{1'b0}};
-  end
-  else if (EXTERNAL_READ_DATA) begin : g_read_data
-    assign  w_read_data = i_value;
-  end
-  else begin : g_read_data
-    assign  w_read_data = w_value;
-  end endgenerate
+      assign  w_trigger[1]  = r_trigger;
+      always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+          r_trigger <= 1'b0;
+        end
+        else begin
+          r_trigger <= i_sw_valid && (i_sw_read_mask != {WIDTH{1'b0}});
+        end
+      end
+    end
+    else begin : g_read_trigger
+      assign  w_trigger[1]  = 1'b0;
+    end
+  endgenerate
+
+  generate
+    if (STORAGE) begin : g_value
+      wire  [WIDTH-1:0] w_value_next;
+      reg   [WIDTH-1:0] r_value;
+
+      assign  w_value_next  =
+        get_next_value(
+          w_value, w_sw_update, i_sw_write_mask, i_sw_write_data,
+          i_hw_write_enable, i_hw_write_data, i_hw_set, i_hw_clear
+        );
+      always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+          r_value <= INITIAL_VALUE;
+        end
+        else if (w_sw_update[0] || w_sw_update[1] || w_hw_update) begin
+          r_value <= w_value_next;
+        end
+      end
+
+      assign  w_value = r_value;
+    end
+    else begin : g_value
+      assign  w_value = i_value;
+    end
+  endgenerate
+
+  generate
+    if (!SW_READABLE) begin : g_read_data
+      assign  w_read_data = {WIDTH{1'b0}};
+    end
+    else if (EXTERNAL_READ_DATA) begin : g_read_data
+      assign  w_read_data = i_value;
+    end
+    else begin : g_read_data
+      assign  w_read_data = w_value;
+    end
+  endgenerate
 endmodule
