@@ -1,6 +1,15 @@
 `ifndef RGGEN_RTL_MACRO_VH
 `define RGGEN_RTL_MACRO_VH
 
+`define RGGEN_READ          2'b10
+`define RGGEN_POSTED_WRITE  2'b01
+`define RGGEN_WRITE         2'b11
+
+`define RGGEN_OKAY          2'b00
+`define RGGEN_EXOKAY        2'b01
+`define RGGEN_SLAVE_ERROR   2'b10
+`define RGGEN_DECODE_ERROR  2'b11
+
 `define RGGEN_SW_ACCESS 0
 `define RGGEN_HW_ACCESS 1
 
