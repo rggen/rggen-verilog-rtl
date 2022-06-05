@@ -5,7 +5,6 @@ module rggen_register_common #(
   parameter [ADDRESS_WIDTH-1:0] OFFSET_ADDRESS  = {ADDRESS_WIDTH{1'b0}},
   parameter                     BUS_WIDTH       = 32,
   parameter                     DATA_WIDTH      = BUS_WIDTH,
-  parameter [DATA_WIDTH-1:0]    VALID_BITS      = {DATA_WIDTH{1'b1}},
   parameter                     REGISTER_INDEX  = 0
 )(
   input                       i_clk,
@@ -121,15 +120,15 @@ module rggen_register_common #(
   assign  o_register_ready      = (!w_backdoor_valid) && w_active;
   assign  o_register_status     = 2'b00;
   assign  o_register_read_data  = w_read_data;
-  assign  o_register_value      = VALID_BITS & i_bit_field_value;
+  assign  o_register_value      = i_bit_field_value;
 
   rggen_mux #(
     .WIDTH    (BUS_WIDTH  ),
     .ENTRIES  (WORDS      )
   ) u_read_data_mux (
-    .i_select (w_match                            ),
-    .i_data   (VALID_BITS & i_bit_field_read_data ),
-    .o_data   (w_read_data                        )
+    .i_select (w_match                ),
+    .i_data   (i_bit_field_read_data  ),
+    .o_data   (w_read_data            )
   );
 
 `ifdef RGGEN_ENABLE_BACKDOOR

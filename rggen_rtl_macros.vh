@@ -38,4 +38,15 @@
 `define rggen_clip_width(WIDTH) \
 (((WIDTH) > 0) ? (WIDTH) : 1)
 
+`define rggen_tie_off_unused_signals(WIDTH, VALID_BITS, READ_DATA, VALUE) \
+if (1) begin : __g_tie_off \
+  genvar  __i; \
+  for (__i = 0;__i < WIDTH;__i = __i + 1) begin : g \
+    if (!((VALID_BITS >> __i) & 1'b1)) begin : g \
+      assign  READ_DATA[__i]  = 1'b0; \
+      assign  VALUE[__i]      = 1'b0; \
+    end \
+  end \
+end
+
 `endif
