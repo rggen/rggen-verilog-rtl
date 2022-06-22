@@ -2,7 +2,7 @@
 module rggen_bit_field #(
   parameter             WIDTH                     = 8,
   parameter [WIDTH-1:0] INITIAL_VALUE             = {WIDTH{1'b0}},
-  parameter             PRECEDENCE_ACCESS         = `RGGEN_SW_ACCESS,
+  parameter             PRECEDENCE_ACCESS         = `RGGEN_HW_ACCESS,
   parameter             SW_READ_ACTION            = `RGGEN_READ_DEFAULT,
   parameter             SW_WRITE_ACTION           = `RGGEN_WRITE_DEFAULT,
   parameter             SW_WRITE_ONCE             = 0,
