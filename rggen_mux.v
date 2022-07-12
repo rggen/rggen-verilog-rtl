@@ -6,6 +6,7 @@ module rggen_mux #(
   input   [WIDTH*ENTRIES-1:0] i_data,
   output  [WIDTH-1:0]         o_data
 );
+`ifndef RGGEN_NAIVE_MUX_IMPLEMENTATION
   function automatic [WIDTH-1:0] __reduce_or;
     input integer             n;
     input integer             offset;
@@ -27,8 +28,8 @@ module rggen_mux #(
       __reduce_or = result[0] | result[1];
     end
     else if (n == 4) begin
-      __reduce_or = data[(0+offset)*WIDTH+:WIDTH] | data[(1+offset)*WIDTH+:WIDTH]
-                  | data[(2+offset)*WIDTH+:WIDTH] | data[(3+offset)*WIDTH+:WIDTH];
+      __reduce_or = (data[(0+offset)*WIDTH+:WIDTH] | data[(1+offset)*WIDTH+:WIDTH])
+                  | (data[(2+offset)*WIDTH+:WIDTH] | data[(3+offset)*WIDTH+:WIDTH]);
     end
     else if (n == 3) begin
       __reduce_or = data[(0+offset)*WIDTH+:WIDTH] | data[(1+offset)*WIDTH+:WIDTH]
@@ -62,6 +63,29 @@ module rggen_mux #(
     end
   end
   endfunction
+`else
+  function automatic [WIDTH-1:0] mux;
+    input [ENTRIES-1:0]       select;
+    input [WIDTH*ENTRIES-1:0] data;
+
+    integer i;
+  begin
+    if (ENTRIES > 1) begin
+      for (i = 0;i < ENTRIES;i = i + 1) begin
+        if (i == 0) begin
+          mux = ({WIDTH{select[i]}} & data[WIDTH*i+:WIDTH]);
+        end
+        else begin
+          mux = ({WIDTH{select[i]}} & data[WIDTH*i+:WIDTH]) | mux;
+        end
+      end
+    end
+    else begin
+      mux = data[0+:WIDTH];
+    end
+  end
+  endfunction
+`endif
 
   assign  o_data  = mux(i_select, i_data);
 endmodule
