@@ -140,7 +140,7 @@ module rggen_axi4lite_adapter #(
   );
 
   wire  [1:0]                 w_request_valid;
-  wire  [2:0]                 w_request_ready;
+  reg   [1:0]                 r_request_valid_latched;
   reg   [1:0]                 r_response_valid;
   wire                        w_response_ack;
   wire  [ACTUAL_ID_WIDTH-1:0] w_id;
@@ -148,9 +148,9 @@ module rggen_axi4lite_adapter #(
   reg   [1:0]                 r_status;
 
   //  Request
-  assign  w_awready = w_bus_ready && w_request_ready[0] && (r_response_valid == 2'b00);
-  assign  w_wready  = w_bus_ready && w_request_ready[1] && (r_response_valid == 2'b00);
-  assign  w_arready = w_bus_ready && w_request_ready[2] && (r_response_valid == 2'b00);
+  assign  w_awready = w_bus_ready && w_request_valid[0] && (r_response_valid == 2'b00);
+  assign  w_wready  = w_bus_ready && w_request_valid[0] && (r_response_valid == 2'b00);
+  assign  w_arready = w_bus_ready && w_request_valid[1] && (r_response_valid == 2'b00);
 
   assign  w_bus_valid       = (w_request_valid != 2'b00) && (r_response_valid == 2'b00);
   assign  w_bus_access      = (w_request_valid[0]) ? RGGEN_WRITE : RGGEN_READ;
@@ -158,8 +158,19 @@ module rggen_axi4lite_adapter #(
   assign  w_bus_write_data  = w_wdata;
   assign  w_bus_strobe      = w_wstrb;
 
-  assign  w_request_valid = get_request_valid(w_awvalid, w_wvalid, w_arvalid);
-  assign  w_request_ready = get_request_ready(w_awvalid, w_wvalid, w_arvalid);
+  assign  w_request_valid = (r_request_valid_latched != 2'b00) ? r_request_valid_latched : get_request_valid(w_awvalid, w_wvalid, w_arvalid);
+
+  always @(posedge i_clk or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+      r_request_valid_latched <= 2'b00;
+    end
+    else if (w_bus_ready) begin
+      r_request_valid_latched <= 2'b00;
+    end
+    else if (w_bus_valid) begin
+      r_request_valid_latched <= w_request_valid;
+    end
+  end
 
   function automatic [1:0] get_request_valid;
     input awvalid;
@@ -178,28 +189,6 @@ module rggen_axi4lite_adapter #(
     end
 
     get_request_valid = valid;
-  end
-  endfunction
-
-  function automatic [2:0] get_request_ready;
-    input       awvalid;
-    input       wvalid;
-    input       arvalid;
-
-    reg [2:0] ready;
-  begin
-    if (WRITE_FIRST) begin
-      ready[0]  = wvalid;
-      ready[1]  = awvalid;
-      ready[2]  = !(awvalid && wvalid);
-    end
-    else begin
-      ready[0]  = (!arvalid) && wvalid;
-      ready[1]  = (!arvalid) && awvalid;
-      ready[2]  = 1'b1;
-    end
-
-    get_request_ready = ready;
   end
   endfunction
 
