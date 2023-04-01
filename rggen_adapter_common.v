@@ -71,9 +71,25 @@ module rggen_adapter_common #(
   //  Request
   assign  o_register_valid      = i_bus_valid && w_inside_range && (!r_busy);
   assign  o_register_access     = i_bus_access;
-  assign  o_register_address    = i_bus_address[LOCAL_ADDRESS_WIDTH-1:0];
+  assign  o_register_address    = get_local_address(i_bus_address);
   assign  o_register_write_data = i_bus_write_data;
   assign  o_register_strobe     = i_bus_strobe;
+
+  function automatic [LOCAL_ADDRESS_WIDTH-1:0] get_local_address;
+    input [ADDRESS_WIDTH-1:0] address;
+
+    reg [ADDRESS_WIDTH-1:0] local_address;
+  begin
+    if (BASE_ADDRESS[0+:LOCAL_ADDRESS_WIDTH] == {LOCAL_ADDRESS_WIDTH{1'b0}}) begin
+      local_address = address;
+    end
+    else begin
+      local_address = address - BASE_ADDRESS;
+    end
+
+    get_local_address = local_address[0+:LOCAL_ADDRESS_WIDTH];
+  end
+  endfunction
 
   //  Response
   assign  o_bus_ready     = w_bus_ready;
