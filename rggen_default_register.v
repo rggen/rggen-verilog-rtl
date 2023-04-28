@@ -4,8 +4,7 @@ module rggen_default_register #(
   parameter                     ADDRESS_WIDTH   = 8,
   parameter [ADDRESS_WIDTH-1:0] OFFSET_ADDRESS  = {ADDRESS_WIDTH{1'b0}},
   parameter                     BUS_WIDTH       = 32,
-  parameter                     DATA_WIDTH      = BUS_WIDTH,
-  parameter                     REGISTER_INDEX  = 0
+  parameter                     DATA_WIDTH      = BUS_WIDTH
 )(
   input                       i_clk,
   input                       i_rst_n,
@@ -32,8 +31,7 @@ module rggen_default_register #(
     .ADDRESS_WIDTH  (ADDRESS_WIDTH  ),
     .OFFSET_ADDRESS (OFFSET_ADDRESS ),
     .BUS_WIDTH      (BUS_WIDTH      ),
-    .DATA_WIDTH     (DATA_WIDTH     ),
-    .REGISTER_INDEX (REGISTER_INDEX )
+    .DATA_WIDTH     (DATA_WIDTH     )
   ) u_register_common (
     .i_clk                  (i_clk                  ),
     .i_rst_n                (i_rst_n                ),

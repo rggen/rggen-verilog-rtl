@@ -4,8 +4,7 @@ module rggen_register_common #(
   parameter                     ADDRESS_WIDTH   = 8,
   parameter [ADDRESS_WIDTH-1:0] OFFSET_ADDRESS  = {ADDRESS_WIDTH{1'b0}},
   parameter                     BUS_WIDTH       = 32,
-  parameter                     DATA_WIDTH      = BUS_WIDTH,
-  parameter                     REGISTER_INDEX  = 0
+  parameter                     DATA_WIDTH      = BUS_WIDTH
 )(
   input                       i_clk,
   input                       i_rst_n,
@@ -57,9 +56,7 @@ module rggen_register_common #(
   function automatic [ADDRESS_WIDTH-1:0] calc_start_address;
     input integer index;
   begin
-    calc_start_address  = OFFSET_ADDRESS
-                        + DATA_BYTE_WIDTH * REGISTER_INDEX
-                        + BUS_BYTE_WIDTH  * index;
+    calc_start_address  = OFFSET_ADDRESS + BUS_BYTE_WIDTH * index;
   end
   endfunction
 
