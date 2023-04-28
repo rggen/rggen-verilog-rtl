@@ -7,7 +7,8 @@ module rggen_adapter_common #(
   parameter [ADDRESS_WIDTH-1:0] BASE_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
   parameter                     BYTE_SIZE           = 256,
   parameter                     ERROR_STATUS        = 0,
-  parameter [BUS_WIDTH-1:0]     DEFAULT_READ_DATA   = {BUS_WIDTH{1'b0}}
+  parameter [BUS_WIDTH-1:0]     DEFAULT_READ_DATA   = {BUS_WIDTH{1'b0}},
+  parameter                     INSERT_SLICER       = 0
 )(
   input                             i_clk,
   input                             i_rst_n,
@@ -69,11 +70,55 @@ module rggen_adapter_common #(
   endfunction
 
   //  Request
-  assign  o_register_valid      = i_bus_valid && w_inside_range && (!r_busy);
-  assign  o_register_access     = i_bus_access;
-  assign  o_register_address    = get_local_address(i_bus_address);
-  assign  o_register_write_data = i_bus_write_data;
-  assign  o_register_strobe     = i_bus_strobe;
+  generate
+    if (INSERT_SLICER) begin : g_request_slicer
+      reg                           r_bus_valid;
+      reg [1:0]                     r_bus_access;
+      reg [LOCAL_ADDRESS_WIDTH-1:0] r_bus_address;
+      reg [BUS_WIDTH-1:0]           r_bus_write_data;
+      reg [BUS_WIDTH/8-1:0]         r_bus_strobe;
+
+      assign  o_register_valid      = r_bus_valid;
+      assign  o_register_access     = r_bus_access;
+      assign  o_register_address    = r_bus_address;
+      assign  o_register_write_data = r_bus_write_data;
+      assign  o_register_strobe     = r_bus_strobe;
+
+      always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+          r_bus_valid <= 1'b0;
+        end
+        else if (!r_busy) begin
+          r_bus_valid <= i_bus_valid && w_inside_range;
+        end
+        else begin
+          r_bus_valid <= 1'b0;
+        end
+      end
+
+      always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+          r_bus_access      <= 2'b00;
+          r_bus_address     <= {LOCAL_ADDRESS_WIDTH{1'b0}};
+          r_bus_write_data  <= {BUS_WIDTH{1'b0}};
+          r_bus_strobe      <= {BUS_WIDTH/8{1'b0}};
+        end
+        else begin
+          r_bus_access      <= i_bus_access;
+          r_bus_address     <= get_local_address(i_bus_address);
+          r_bus_write_data  <= i_bus_write_data;
+          r_bus_strobe      <= i_bus_strobe;
+        end
+      end
+    end
+    else begin : g_no_request_slicer
+      assign  o_register_valid      = i_bus_valid && w_inside_range && (!r_busy);
+      assign  o_register_access     = i_bus_access;
+      assign  o_register_address    = get_local_address(i_bus_address);
+      assign  o_register_write_data = i_bus_write_data;
+      assign  o_register_strobe     = i_bus_strobe;
+    end
+  endgenerate
 
   function automatic [LOCAL_ADDRESS_WIDTH-1:0] get_local_address;
     input [ADDRESS_WIDTH-1:0] address;
@@ -98,7 +143,14 @@ module rggen_adapter_common #(
 
   assign  w_register_inactive = (i_register_active == {REGISTERS{1'b0}}) || (!w_inside_range);
   assign  w_register_ready    = (i_register_ready  != {REGISTERS{1'b0}});
-  assign  w_bus_ready         = w_register_ready || w_register_inactive;
+  generate
+    if (INSERT_SLICER) begin : g_response_ready
+      assign  w_bus_ready = r_busy && (w_register_ready || w_register_inactive);
+    end
+    else begin : g_response_ready
+      assign  w_bus_ready = w_register_ready || w_register_inactive;
+    end
+  endgenerate
 
   rggen_mux #(
     .WIDTH    (2          ),

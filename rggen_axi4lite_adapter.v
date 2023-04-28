@@ -10,6 +10,7 @@ module rggen_axi4lite_adapter #(
   parameter                     BYTE_SIZE           = 256,
   parameter                     ERROR_STATUS        = 0,
   parameter [BUS_WIDTH-1:0]     DEFAULT_READ_DATA   = {BUS_WIDTH{1'b0}},
+  parameter                     INSERT_SLICER       = 0,
   parameter                     WRITE_FIRST         = 1,
   parameter                     ACTUAL_ID_WIDTH     = `rggen_clip_width(ID_WIDTH)
 )(
@@ -221,25 +222,27 @@ module rggen_axi4lite_adapter #(
     end
   end
 
-  generate if (ID_WIDTH >= 1) begin : g_id
-    reg [ID_WIDTH-1:0]  r_id;
+  generate
+    if (ID_WIDTH >= 1) begin : g_id
+      reg [ID_WIDTH-1:0]  r_id;
 
-    assign  w_id  = r_id;
-    always @(posedge i_clk or negedge i_rst_n) begin
-      if (!i_rst_n) begin
-        r_id  <= {ID_WIDTH{1'b0}};
-      end
-      else if (w_awvalid && w_awready) begin
-        r_id  <= w_awid;
-      end
-      else if (w_arvalid && w_arready) begin
-        r_id  <= w_arid;
+      assign  w_id  = r_id;
+      always @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+          r_id  <= {ID_WIDTH{1'b0}};
+        end
+        else if (w_awvalid && w_awready) begin
+          r_id  <= w_awid;
+        end
+        else if (w_arvalid && w_arready) begin
+          r_id  <= w_arid;
+        end
       end
     end
-  end
-  else begin : g_id
-    assign  w_id  = 1'b0;
-  end endgenerate
+    else begin : g_id
+      assign  w_id  = 1'b0;
+    end
+  endgenerate
 
   always @(posedge i_clk) begin
     if (w_bus_valid && w_bus_ready) begin
@@ -258,7 +261,8 @@ module rggen_axi4lite_adapter #(
     .BASE_ADDRESS         (BASE_ADDRESS         ),
     .BYTE_SIZE            (BYTE_SIZE            ),
     .ERROR_STATUS         (ERROR_STATUS         ),
-    .DEFAULT_READ_DATA    (DEFAULT_READ_DATA    )
+    .DEFAULT_READ_DATA    (DEFAULT_READ_DATA    ),
+    .INSERT_SLICER        (INSERT_SLICER        )
   ) u_adapter_common (
     .i_clk                  (i_clk                  ),
     .i_rst_n                (i_rst_n                ),
