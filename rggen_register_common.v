@@ -1,10 +1,10 @@
 module rggen_register_common #(
-  parameter                     READABLE        = 1'b1,
-  parameter                     WRITABLE        = 1'b1,
-  parameter                     ADDRESS_WIDTH   = 8,
-  parameter [ADDRESS_WIDTH-1:0] OFFSET_ADDRESS  = {ADDRESS_WIDTH{1'b0}},
-  parameter                     BUS_WIDTH       = 32,
-  parameter                     DATA_WIDTH      = BUS_WIDTH
+  parameter READABLE        = 1'b1,
+  parameter WRITABLE        = 1'b1,
+  parameter ADDRESS_WIDTH   = 8,
+  parameter OFFSET_ADDRESS  = {ADDRESS_WIDTH{1'b0}},
+  parameter BUS_WIDTH       = 32,
+  parameter DATA_WIDTH      = BUS_WIDTH
 )(
   input                       i_clk,
   input                       i_rst_n,
@@ -44,7 +44,7 @@ module rggen_register_common #(
       .WIDTH          (ADDRESS_WIDTH            ),
       .BUS_WIDTH      (BUS_WIDTH                ),
       .START_ADDRESS  (calc_start_address(g_i)  ),
-      .END_ADDRESS    (calc_end_address(g_i)    )
+      .BYTE_SIZE      (BUS_BYTE_WIDTH           )
     ) u_decoder (
       .i_address          (i_register_address ),
       .i_access           (i_register_access  ),
@@ -55,15 +55,13 @@ module rggen_register_common #(
 
   function automatic [ADDRESS_WIDTH-1:0] calc_start_address;
     input integer index;
-  begin
-    calc_start_address  = OFFSET_ADDRESS + BUS_BYTE_WIDTH * index;
-  end
-  endfunction
 
-  function automatic [ADDRESS_WIDTH-1:0] calc_end_address;
-    input integer index;
+    reg [ADDRESS_WIDTH-1:0] offset_address;
+    integer                 delta;
   begin
-    calc_end_address  = calc_start_address(index) + BUS_BYTE_WIDTH - 1;
+    offset_address      = OFFSET_ADDRESS[ADDRESS_WIDTH-1:0];
+    delta               = BUS_BYTE_WIDTH * index;
+    calc_start_address  = offset_address + delta[ADDRESS_WIDTH-1:0];
   end
   endfunction
 

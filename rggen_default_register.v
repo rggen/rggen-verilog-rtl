@@ -1,10 +1,10 @@
 module rggen_default_register #(
-  parameter                     READABLE        = 1'b1,
-  parameter                     WRITABLE        = 1'b1,
-  parameter                     ADDRESS_WIDTH   = 8,
-  parameter [ADDRESS_WIDTH-1:0] OFFSET_ADDRESS  = {ADDRESS_WIDTH{1'b0}},
-  parameter                     BUS_WIDTH       = 32,
-  parameter                     DATA_WIDTH      = BUS_WIDTH
+  parameter READABLE        = 1'b1,
+  parameter WRITABLE        = 1'b1,
+  parameter ADDRESS_WIDTH   = 8,
+  parameter OFFSET_ADDRESS  = {ADDRESS_WIDTH{1'b0}},
+  parameter BUS_WIDTH       = 32,
+  parameter DATA_WIDTH      = BUS_WIDTH
 )(
   input                       i_clk,
   input                       i_rst_n,

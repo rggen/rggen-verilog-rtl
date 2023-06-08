@@ -1,18 +1,18 @@
 `include  "rggen_rtl_macros.vh"
 module rggen_axi4lite_adapter #(
-  parameter                     ID_WIDTH            = 0,
-  parameter                     ADDRESS_WIDTH       = 8,
-  parameter                     LOCAL_ADDRESS_WIDTH = 8,
-  parameter                     BUS_WIDTH           = 32,
-  parameter                     REGISTERS           = 1,
-  parameter                     PRE_DECODE          = 0,
-  parameter [ADDRESS_WIDTH-1:0] BASE_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
-  parameter                     BYTE_SIZE           = 256,
-  parameter                     ERROR_STATUS        = 0,
-  parameter [BUS_WIDTH-1:0]     DEFAULT_READ_DATA   = {BUS_WIDTH{1'b0}},
-  parameter                     INSERT_SLICER       = 0,
-  parameter                     WRITE_FIRST         = 1,
-  parameter                     ACTUAL_ID_WIDTH     = `rggen_clip_width(ID_WIDTH)
+  parameter ID_WIDTH            = 0,
+  parameter ADDRESS_WIDTH       = 8,
+  parameter LOCAL_ADDRESS_WIDTH = 8,
+  parameter BUS_WIDTH           = 32,
+  parameter REGISTERS           = 1,
+  parameter PRE_DECODE          = 0,
+  parameter BASE_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
+  parameter BYTE_SIZE           = 256,
+  parameter ERROR_STATUS        = 0,
+  parameter DEFAULT_READ_DATA   = {BUS_WIDTH{1'b0}},
+  parameter INSERT_SLICER       = 0,
+  parameter WRITE_FIRST         = 1,
+  parameter ACTUAL_ID_WIDTH     = `rggen_clip_width(ID_WIDTH)
 )(
   input                             i_clk,
   input                             i_rst_n,

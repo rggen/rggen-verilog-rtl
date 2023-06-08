@@ -32,8 +32,8 @@
 `define RGGEN_WRITE_0_TOGGLE  8
 `define RGGEN_WRITE_1_TOGGLE  9
 
-`define rggen_slice(EXPRESSION, WIDTH, INDEX) \
-(((EXPRESSION) >> ((WIDTH) * (INDEX))) & {(WIDTH){1'b1}})
+`define rggen_slice(EXPRESSION, TOTAL_BITS, WIDTH, INDEX) \
+(((EXPRESSION) >> ((WIDTH) * (INDEX))) & {{((TOTAL_BITS)-(WIDTH)){1'b0}}, {(WIDTH){1'b1}}})
 
 `define rggen_clip_width(WIDTH) \
 (((WIDTH) > 0) ? (WIDTH) : 1)
@@ -42,7 +42,7 @@
 if (1) begin : __g_tie_off \
   genvar  __i; \
   for (__i = 0;__i < WIDTH;__i = __i + 1) begin : g \
-    if (!((VALID_BITS >> __i) & 1'b1)) begin : g \
+    if (((VALID_BITS >> __i) % 2) == 0) begin : g \
       assign  READ_DATA[__i]  = 1'b0; \
       assign  VALUE[__i]      = 1'b0; \
     end \

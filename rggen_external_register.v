@@ -1,8 +1,8 @@
 module rggen_external_register #(
   parameter ADDRESS_WIDTH = 8,
   parameter BUS_WIDTH     = 32,
-  parameter [ADDRESS_WIDTH-1:0] START_ADDRESS = {ADDRESS_WIDTH{1'b0}},
-  parameter [ADDRESS_WIDTH-1:0] END_ADDRESS   = {ADDRESS_WIDTH{1'b0}}
+  parameter START_ADDRESS = {ADDRESS_WIDTH{1'b0}},
+  parameter BYTE_SIZE     = 0
 )(
   input                       i_clk,
   input                       i_rst_n,
@@ -34,7 +34,7 @@ module rggen_external_register #(
     .WIDTH          (ADDRESS_WIDTH  ),
     .BUS_WIDTH      (BUS_WIDTH      ),
     .START_ADDRESS  (START_ADDRESS  ),
-    .END_ADDRESS    (END_ADDRESS    )
+    .BYTE_SIZE      (BYTE_SIZE      )
   ) u_decoder (
     .i_address          (i_register_address ),
     .i_access           (i_register_access  ),

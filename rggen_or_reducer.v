@@ -6,14 +6,14 @@ module rggen_or_reducer #(
   output  [WIDTH-1:0]   o_result
 );
   function automatic [16*N-1:0] get_sub_n_list;
-    input [15:0]  n;
+    input integer n;
 
     reg [15:0]      current_n;
     reg [15:0]      half_n;
     reg [16*N-1:0]  list;
     integer         list_index;
   begin
-    current_n   = n;
+    current_n   = n[15:0];
     list_index  = 0;
     while (current_n > 0) begin
       half_n  = current_n / 2;
@@ -59,11 +59,11 @@ module rggen_or_reducer #(
   end
   endfunction
 
-  function automatic [15:0] get_next_n;
+  function automatic integer get_next_n;
     input [16*N-1:0]  sub_n_list;
 
-    reg [15:0]  next_n;
-    integer     i;
+    integer next_n;
+    integer i;
   begin
     next_n  = 0;
     for (i = 0;i < N;i = i + 1) begin
@@ -76,7 +76,7 @@ module rggen_or_reducer #(
 
   localparam  [16*N-1:0]  SUB_N_LIST  = get_sub_n_list(N);
   localparam  [16*N-1:0]  OFFSET_LIST = get_offset_list(SUB_N_LIST);
-  localparam  [15:0]      NEXT_N      = get_next_n(SUB_N_LIST);
+  localparam              NEXT_N      = get_next_n(SUB_N_LIST);
 
   wire  [WIDTH*NEXT_N-1:0]  next_data;
   genvar                    i;

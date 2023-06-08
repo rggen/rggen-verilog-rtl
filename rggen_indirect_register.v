@@ -1,12 +1,12 @@
 module rggen_indirect_register #(
-  parameter                             READABLE              = 1'b1,
-  parameter                             WRITABLE              = 1'b1,
-  parameter                             ADDRESS_WIDTH         = 8,
-  parameter [ADDRESS_WIDTH-1:0]         OFFSET_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
-  parameter                             BUS_WIDTH             = 32,
-  parameter                             DATA_WIDTH            = BUS_WIDTH,
-  parameter                             INDIRECT_INDEX_WIDTH  = 1,
-  parameter [INDIRECT_INDEX_WIDTH-1:0]  INDIRECT_INDEX_VALUE  = {INDIRECT_INDEX_WIDTH{1'b0}}
+  parameter READABLE              = 1'b1,
+  parameter WRITABLE              = 1'b1,
+  parameter ADDRESS_WIDTH         = 8,
+  parameter OFFSET_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
+  parameter BUS_WIDTH             = 32,
+  parameter DATA_WIDTH            = BUS_WIDTH,
+  parameter INDIRECT_INDEX_WIDTH  = 1,
+  parameter INDIRECT_INDEX_VALUE  = {INDIRECT_INDEX_WIDTH{1'b0}}
 )(
   input                               i_clk,
   input                               i_rst_n,

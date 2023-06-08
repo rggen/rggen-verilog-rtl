@@ -1,18 +1,18 @@
 `include  "rggen_rtl_macros.vh"
 module rggen_bit_field #(
-  parameter             WIDTH                     = 8,
-  parameter [WIDTH-1:0] INITIAL_VALUE             = {WIDTH{1'b0}},
-  parameter             PRECEDENCE_ACCESS         = `RGGEN_HW_ACCESS,
-  parameter             SW_READ_ACTION            = `RGGEN_READ_DEFAULT,
-  parameter             SW_WRITE_ACTION           = `RGGEN_WRITE_DEFAULT,
-  parameter             SW_WRITE_ONCE             = 0,
-  parameter             SW_WRITE_ENABLE_POLARITY  = `RGGEN_ACTIVE_HIGH,
-  parameter             HW_WRITE_ENABLE_POLARITY  = `RGGEN_ACTIVE_HIGH,
-  parameter             HW_SET_WIDTH              = WIDTH,
-  parameter             HW_CLEAR_WIDTH            = WIDTH,
-  parameter             STORAGE                   = 1,
-  parameter             EXTERNAL_READ_DATA        = 0,
-  parameter             TRIGGER                   = 0
+  parameter WIDTH                     = 8,
+  parameter INITIAL_VALUE             = {WIDTH{1'b0}},
+  parameter PRECEDENCE_ACCESS         = `RGGEN_HW_ACCESS,
+  parameter SW_READ_ACTION            = `RGGEN_READ_DEFAULT,
+  parameter SW_WRITE_ACTION           = `RGGEN_WRITE_DEFAULT,
+  parameter SW_WRITE_ONCE             = 0,
+  parameter SW_WRITE_ENABLE_POLARITY  = `RGGEN_ACTIVE_HIGH,
+  parameter HW_WRITE_ENABLE_POLARITY  = `RGGEN_ACTIVE_HIGH,
+  parameter HW_SET_WIDTH              = WIDTH,
+  parameter HW_CLEAR_WIDTH            = WIDTH,
+  parameter STORAGE                   = 1,
+  parameter EXTERNAL_READ_DATA        = 0,
+  parameter TRIGGER                   = 0
 )(
   input                         i_clk,
   input                         i_rst_n,
@@ -281,7 +281,7 @@ module rggen_bit_field #(
         );
       always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
-          r_value <= INITIAL_VALUE;
+          r_value <= INITIAL_VALUE[WIDTH-1:0];
         end
         else if (w_sw_update[0] || w_sw_update[1] || w_hw_update) begin
           r_value <= w_value_next;
