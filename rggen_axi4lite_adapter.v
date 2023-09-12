@@ -43,7 +43,7 @@ module rggen_axi4lite_adapter #(
   output  [1:0]                     o_register_access,
   output  [LOCAL_ADDRESS_WIDTH-1:0] o_register_address,
   output  [BUS_WIDTH-1:0]           o_register_write_data,
-  output  [BUS_WIDTH/8-1:0]         o_register_strobe,
+  output  [BUS_WIDTH-1:0]           o_register_strobe,
   input   [REGISTERS-1:0]           i_register_active,
   input   [REGISTERS-1:0]           i_register_ready,
   input   [2*REGISTERS-1:0]         i_register_status,

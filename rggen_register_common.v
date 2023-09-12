@@ -1,3 +1,4 @@
+`include  "rggen_rtl_macros.vh"
 module rggen_register_common #(
   parameter READABLE        = 1'b1,
   parameter WRITABLE        = 1'b1,
@@ -12,7 +13,7 @@ module rggen_register_common #(
   input   [1:0]               i_register_access,
   input   [ADDRESS_WIDTH-1:0] i_register_address,
   input   [BUS_WIDTH-1:0]     i_register_write_data,
-  input   [BUS_WIDTH/8-1:0]   i_register_strobe,
+  input   [BUS_WIDTH-1:0]     i_register_strobe,
   output                      o_register_active,
   output                      o_register_ready,
   output  [1:0]               o_register_status,
@@ -79,28 +80,26 @@ module rggen_register_common #(
   assign  o_bit_field_write_data  = (w_backdoor_valid) ? w_write_data[1] : w_write_data[0];
 
   assign  w_frontdoor_valid = i_register_valid && w_active;
-  assign  w_read_mask[0]    = get_mask(1'b0, READABLE, w_match, i_register_access, {BUS_BYTE_WIDTH{1'b1}});
-  assign  w_write_mask[0]   = get_mask(1'b1, WRITABLE, w_match, i_register_access, i_register_strobe     );
+  assign  w_read_mask[0]    = get_mask(1'b0, READABLE, w_match, i_register_access, {BUS_WIDTH{1'b1}});
+  assign  w_write_mask[0]   = get_mask(1'b1, WRITABLE, w_match, i_register_access, i_register_strobe);
   assign  w_write_data[0]   = {WORDS{i_register_write_data}};
 
   function automatic [DATA_WIDTH-1:0] get_mask;
-    input                       write_access;
-    input                       accessible;
-    input [WORDS-1:0]           match;
-    input [1:0]                 bus_access;
-    input [BUS_BYTE_WIDTH-1:0]  strobe;
+    input                 write_access;
+    input                 accessible;
+    input [WORDS-1:0]     match;
+    input [1:0]           bus_access;
+    input [BUS_WIDTH-1:0] strobe;
 
-    integer               i, j;
+    integer               i;
     reg [DATA_WIDTH-1:0]  mask;
   begin
     for (i = 0;i < WORDS;i = i + 1) begin
-      for (j = 0;j < BUS_BYTE_WIDTH;j = j + 1) begin
-        if (accessible && (write_access == bus_access[0]) && match[i]) begin
-          mask[BUS_WIDTH*i+8*j+:8]  = {8{strobe[j]}};
-        end
-        else begin
-          mask[BUS_WIDTH*i+8*j+:8]  = 8'h00;
-        end
+      if (accessible && (write_access == bus_access[0]) && match[i]) begin
+        mask[BUS_WIDTH*i+:BUS_WIDTH]  = strobe;
+      end
+      else begin
+        mask[BUS_WIDTH*i+:BUS_WIDTH]  = {BUS_WIDTH{1'b0}};
       end
     end
 
