@@ -1,6 +1,7 @@
 module rggen_external_register #(
   parameter ADDRESS_WIDTH = 8,
   parameter BUS_WIDTH     = 32,
+  parameter STROBE_WIDTH  = BUS_WIDTH / 8,
   parameter START_ADDRESS = {ADDRESS_WIDTH{1'b0}},
   parameter BYTE_SIZE     = 0
 )(
@@ -10,7 +11,7 @@ module rggen_external_register #(
   input   [1:0]               i_register_access,
   input   [ADDRESS_WIDTH-1:0] i_register_address,
   input   [BUS_WIDTH-1:0]     i_register_write_data,
-  input   [BUS_WIDTH/8-1:0]   i_register_strobe,
+  input   [BUS_WIDTH-1:0]     i_register_strobe,
   output                      o_register_active,
   output                      o_register_ready,
   output  [1:0]               o_register_status,
@@ -20,7 +21,7 @@ module rggen_external_register #(
   output  [1:0]               o_external_access,
   output  [ADDRESS_WIDTH-1:0] o_external_address,
   output  [BUS_WIDTH-1:0]     o_external_data,
-  output  [BUS_WIDTH/8-1:0]   o_external_strobe,
+  output  [STROBE_WIDTH-1:0]  o_external_strobe,
   input                       i_external_ready,
   input   [1:0]               i_external_status,
   input   [BUS_WIDTH-1:0]     i_external_data
@@ -47,7 +48,7 @@ module rggen_external_register #(
   reg [1:0]               r_access;
   reg [ADDRESS_WIDTH-1:0] r_address;
   reg [BUS_WIDTH-1:0]     r_write_data;
-  reg [BUS_WIDTH/8-1:0]   r_strobe;
+  reg [STROBE_WIDTH-1:0]  r_strobe;
 
   assign  o_external_valid    = r_valid;
   assign  o_external_access   = r_access;
@@ -81,9 +82,28 @@ module rggen_external_register #(
   always @(posedge i_clk) begin
     if (i_register_valid && w_match) begin
       r_write_data  <= i_register_write_data;
-      r_strobe      <= i_register_strobe;
+      r_strobe      <= get_bus_strobe(i_register_strobe);
     end
   end
+
+  function automatic [STROBE_WIDTH-1:0] get_bus_strobe;
+    input [BUS_WIDTH-1:0] strobe;
+
+    reg [STROBE_WIDTH-1:0]  bus_strobe;
+    integer                 i;
+  begin
+    if (STROBE_WIDTH == BUS_WIDTH) begin
+      bus_strobe  = strobe[STROBE_WIDTH-1:0];
+    end
+    else begin
+      for (i = 0;i < STROBE_WIDTH;i = i + 1) begin
+        bus_strobe[i] = strobe[8*i+:8] != 8'h00;
+      end
+    end
+
+    get_bus_strobe  = bus_strobe;
+  end
+  endfunction
 
   //  Response
   assign  o_register_active     = w_match;

@@ -12,7 +12,7 @@ module rggen_default_register #(
   input   [1:0]               i_register_access,
   input   [ADDRESS_WIDTH-1:0] i_register_address,
   input   [BUS_WIDTH-1:0]     i_register_write_data,
-  input   [BUS_WIDTH/8-1:0]   i_register_strobe,
+  input   [BUS_WIDTH-1:0]     i_register_strobe,
   output                      o_register_active,
   output                      o_register_ready,
   output  [1:0]               o_register_status,

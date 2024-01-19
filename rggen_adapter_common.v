@@ -2,6 +2,7 @@ module rggen_adapter_common #(
   parameter ADDRESS_WIDTH       = 8,
   parameter LOCAL_ADDRESS_WIDTH = 8,
   parameter BUS_WIDTH           = 32,
+  parameter STROBE_WIDTH        = BUS_WIDTH / 8,
   parameter REGISTERS           = 1,
   parameter PRE_DECODE          = 0,
   parameter BASE_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
@@ -16,7 +17,7 @@ module rggen_adapter_common #(
   input   [1:0]                     i_bus_access,
   input   [ADDRESS_WIDTH-1:0]       i_bus_address,
   input   [BUS_WIDTH-1:0]           i_bus_write_data,
-  input   [BUS_WIDTH/8-1:0]         i_bus_strobe,
+  input   [STROBE_WIDTH-1:0]        i_bus_strobe,
   output                            o_bus_ready,
   output  [1:0]                     o_bus_status,
   output  [BUS_WIDTH-1:0]           o_bus_read_data,
@@ -24,7 +25,7 @@ module rggen_adapter_common #(
   output  [1:0]                     o_register_access,
   output  [LOCAL_ADDRESS_WIDTH-1:0] o_register_address,
   output  [BUS_WIDTH-1:0]           o_register_write_data,
-  output  [BUS_WIDTH/8-1:0]         o_register_strobe,
+  output  [BUS_WIDTH-1:0]           o_register_strobe,
   input   [REGISTERS-1:0]           i_register_active,
   input   [REGISTERS-1:0]           i_register_ready,
   input   [2*REGISTERS-1:0]         i_register_status,
@@ -78,13 +79,13 @@ module rggen_adapter_common #(
       reg [1:0]                     r_bus_access;
       reg [LOCAL_ADDRESS_WIDTH-1:0] r_bus_address;
       reg [BUS_WIDTH-1:0]           r_bus_write_data;
-      reg [BUS_WIDTH/8-1:0]         r_bus_strobe;
+      reg [STROBE_WIDTH-1:0]        r_bus_strobe;
 
       assign  o_register_valid      = r_bus_valid;
       assign  o_register_access     = r_bus_access;
       assign  o_register_address    = r_bus_address;
       assign  o_register_write_data = r_bus_write_data;
-      assign  o_register_strobe     = r_bus_strobe;
+      assign  o_register_strobe     = get_register_strobe(r_bus_strobe);
 
       always @(posedge i_clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
@@ -103,7 +104,7 @@ module rggen_adapter_common #(
           r_bus_access      <= 2'b00;
           r_bus_address     <= {LOCAL_ADDRESS_WIDTH{1'b0}};
           r_bus_write_data  <= {BUS_WIDTH{1'b0}};
-          r_bus_strobe      <= {BUS_WIDTH/8{1'b0}};
+          r_bus_strobe      <= {STROBE_WIDTH{1'b0}};
         end
         else begin
           r_bus_access      <= i_bus_access;
@@ -118,7 +119,7 @@ module rggen_adapter_common #(
       assign  o_register_access     = i_bus_access;
       assign  o_register_address    = get_local_address(i_bus_address);
       assign  o_register_write_data = i_bus_write_data;
-      assign  o_register_strobe     = i_bus_strobe;
+      assign  o_register_strobe     = get_register_strobe(i_bus_strobe);
     end
   endgenerate
 
@@ -135,6 +136,25 @@ module rggen_adapter_common #(
     end
 
     get_local_address = local_address[0+:LOCAL_ADDRESS_WIDTH];
+  end
+  endfunction
+
+  function automatic [BUS_WIDTH-1:0] get_register_strobe;
+    input [STROBE_WIDTH-1:0]  strobe;
+
+    reg [BUS_WIDTH-1:0] register_strobe;
+    integer             i;
+  begin
+    if (BUS_WIDTH == STROBE_WIDTH) begin
+      register_strobe[STROBE_WIDTH-1:0] = strobe;
+    end
+    else begin
+      for (i = 0;i < STROBE_WIDTH;i = i + 1) begin
+        register_strobe[8*i+:8] = {8{strobe[i]}};
+      end
+    end
+
+    get_register_strobe = register_strobe;
   end
   endfunction
 
