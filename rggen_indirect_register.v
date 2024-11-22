@@ -5,8 +5,7 @@ module rggen_indirect_register #(
   parameter OFFSET_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
   parameter BUS_WIDTH             = 32,
   parameter DATA_WIDTH            = BUS_WIDTH,
-  parameter INDIRECT_INDEX_WIDTH  = 1,
-  parameter INDIRECT_INDEX_VALUE  = {INDIRECT_INDEX_WIDTH{1'b0}}
+  parameter INDIRECT_MATCH_WIDTH  = 1
 )(
   input                               i_clk,
   input                               i_rst_n,
@@ -20,7 +19,7 @@ module rggen_indirect_register #(
   output  [1:0]                       o_register_status,
   output  [BUS_WIDTH-1:0]             o_register_read_data,
   output  [DATA_WIDTH-1:0]            o_register_value,
-  input   [INDIRECT_INDEX_WIDTH-1:0]  i_indirect_index,
+  input   [INDIRECT_MATCH_WIDTH-1:0]  i_indirect_match,
   output                              o_bit_field_valid,
   output  [DATA_WIDTH-1:0]            o_bit_field_read_mask,
   output  [DATA_WIDTH-1:0]            o_bit_field_write_mask,
@@ -30,7 +29,7 @@ module rggen_indirect_register #(
 );
   wire  w_index_match;
 
-  assign  w_index_match = i_indirect_index == INDIRECT_INDEX_VALUE;
+  assign  w_index_match = i_indirect_match == {INDIRECT_MATCH_WIDTH{1'b1}};
   rggen_register_common #(
     .READABLE       (READABLE       ),
     .WRITABLE       (WRITABLE       ),
