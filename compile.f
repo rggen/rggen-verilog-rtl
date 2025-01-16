@@ -16,3 +16,4 @@ ${RGGEN_VERILOG_RTL_ROOT}/rggen_axi4lite_adapter.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_axi4lite_bridge.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_wishbone_adapter.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_wishbone_bridge.v
+${RGGEN_VERILOG_RTL_ROOT}/rggen_native_adapter.v

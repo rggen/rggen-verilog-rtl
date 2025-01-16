@@ -17,5 +17,6 @@ include_directory '.'
   'rggen_axi4lite_adapter.v',
   'rggen_axi4lite_bridge.v',
   'rggen_wishbone_adapter.v',
-  'rggen_wishbone_bridge.v'
+  'rggen_wishbone_bridge.v',
+  'rggen_native_adapter.v'
 ].each { |file| source_file file }
