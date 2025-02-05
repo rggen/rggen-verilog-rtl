@@ -80,7 +80,7 @@ module rggen_register_common #(
   assign  o_bit_field_write_data  = (w_backdoor_valid) ? w_write_data[1] : w_write_data[0];
 
   assign  w_frontdoor_valid = i_register_valid && w_active;
-  assign  w_read_mask[0]    = get_mask(1'b0, READABLE, w_match, i_register_access, {BUS_WIDTH{1'b1}});
+  assign  w_read_mask[0]    = get_mask(1'b0, READABLE, w_match, i_register_access, i_register_strobe);
   assign  w_write_mask[0]   = get_mask(1'b1, WRITABLE, w_match, i_register_access, i_register_strobe);
   assign  w_write_data[0]   = {WORDS{i_register_write_data}};
 

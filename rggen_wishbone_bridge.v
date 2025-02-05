@@ -1,3 +1,4 @@
+`include  "rggen_rtl_macros.vh"
 module rggen_wishbone_bridge #(
   parameter ADDRESS_WIDTH = 8,
   parameter BUS_WIDTH     = 32,
