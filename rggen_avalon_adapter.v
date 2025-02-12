@@ -19,8 +19,6 @@ module rggen_avalon_adapter #(
   input   [BUS_WIDTH/8-1:0]         i_byteenable,
   input   [BUS_WIDTH-1:0]           i_writedata,
   output                            o_waitrequest,
-  output                            o_readdatavalid,
-  output                            o_writeresponsevalid,
   output  [1:0]                     o_response,
   output  [BUS_WIDTH-1:0]           o_readdata,
   output                            o_register_valid,
@@ -33,13 +31,7 @@ module rggen_avalon_adapter #(
   input   [2*REGISTERS-1:0]         i_register_status,
   input   [BUS_WIDTH*REGISTERS-1:0] i_register_read_data
 );
-  wire                      w_request_valid;
-  reg                       r_request_valid;
-  reg                       r_read;
-  reg   [ADDRESS_WIDTH-1:0] r_address;
-  reg   [BUS_WIDTH/8-1:0]   r_byteenable;
-  reg   [BUS_WIDTH-1:0]     r_writedata;
-  reg   [1:0]               r_response_valid;
+  reg                       r_waitrequest;
   reg   [1:0]               r_response;
   reg   [BUS_WIDTH-1:0]     r_readdata;
   wire                      w_bus_valid;
@@ -51,63 +43,25 @@ module rggen_avalon_adapter #(
   wire  [1:0]               w_bus_status;
   wire  [BUS_WIDTH-1:0]     w_bus_read_data;
 
-  assign  o_waitrequest         = r_request_valid;
-  assign  o_readdatavalid       = r_response_valid[0];
-  assign  o_writeresponsevalid  = r_response_valid[1];
-  assign  o_response            = r_response;
-  assign  o_readdata            = r_readdata;
+  assign  w_bus_valid       = (i_read || i_write) && r_waitrequest;
+  assign  w_bus_access      = (i_read) ? `RGGEN_READ : `RGGEN_WRITE;
+  assign  w_bus_address     = i_address;
+  assign  w_bus_write_data  = i_writedata;
+  assign  w_bus_strobe      = i_byteenable;
 
-  assign  w_request_valid   = i_read || i_write;
-  assign  w_bus_valid       = w_request_valid || r_request_valid;
-  assign  w_bus_access      = ({r_request_valid, r_read} == 2'b11) ? `RGGEN_READ
-                            : ({r_request_valid, r_read} == 2'b10) ? `RGGEN_WRITE
-                            : (i_read                            ) ? `RGGEN_READ
-                                                                   : `RGGEN_WRITE;
-  assign  w_bus_address     = (r_request_valid) ? r_address    : i_address;
-  assign  w_bus_write_data  = (r_request_valid) ? r_writedata  : i_writedata;
-  assign  w_bus_strobe      = (r_request_valid) ? r_byteenable : i_byteenable;
+  assign  o_waitrequest = r_waitrequest;
+  assign  o_response    = r_response;
+  assign  o_readdata    = r_readdata;
 
   always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
-      r_request_valid <= 1'b0;
+      r_waitrequest <= 1'b1;
     end
     else if (w_bus_valid && w_bus_ready) begin
-      r_request_valid <= 1'b0;
-    end
-    else if (!r_request_valid) begin
-      r_request_valid <= w_request_valid;
-    end
-  end
-
-  always @(posedge i_clk or negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      r_read        <= 1'b0;
-      r_address     <= {ADDRESS_WIDTH{1'b0}};
-      r_byteenable  <= {BUS_WIDTH/8{1'b0}};
-      r_writedata   <= {BUS_WIDTH{1'b0}};
-    end
-    else if ({r_request_valid, w_request_valid} == 2'b01) begin
-      r_read        <= i_read;
-      r_address     <= i_address;
-      r_byteenable  <= i_byteenable;
-      r_writedata   <= i_writedata;
-    end
-  end
-
-  always @(posedge i_clk or negedge i_rst_n) begin
-    if (!i_rst_n) begin
-      r_response_valid  <= 2'b00;
-    end
-    else if (w_bus_valid && w_bus_ready) begin
-      if (w_bus_access == `RGGEN_READ) begin
-        r_response_valid  <= 2'b01;
-      end
-      else begin
-        r_response_valid  <= 2'b10;
-      end
+      r_waitrequest <= 1'b0;
     end
     else begin
-      r_response_valid  <= 2'b00;
+      r_waitrequest <= 1'b1;
     end
   end
 
