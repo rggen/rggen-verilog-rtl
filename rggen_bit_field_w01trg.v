@@ -4,10 +4,10 @@ module rggen_bit_field_w01trg #(
 )(
   input               i_clk,
   input               i_rst_n,
-  input               i_sw_valid,
-  input   [WIDTH-1:0] i_sw_read_mask,
+  input               i_sw_read_valid,
+  input               i_sw_write_valid,
   input               i_sw_write_enable,
-  input   [WIDTH-1:0] i_sw_write_mask,
+  input   [WIDTH-1:0] i_sw_mask,
   input   [WIDTH-1:0] i_sw_write_data,
   output  [WIDTH-1:0] o_sw_read_data,
   output  [WIDTH-1:0] o_sw_value,
@@ -15,6 +15,7 @@ module rggen_bit_field_w01trg #(
   output  [WIDTH-1:0] o_trigger
 );
   reg [WIDTH-1:0] r_trigger;
+  integer         i;
 
   assign  o_sw_read_data  = i_value;
   assign  o_sw_value      = r_trigger;
@@ -24,14 +25,15 @@ module rggen_bit_field_w01trg #(
     if (!i_rst_n) begin
       r_trigger <= {WIDTH{1'b0}};
     end
-    else if (i_sw_valid) begin
-      r_trigger <=
-        (TRIGGER_VALUE != 0)
-          ? i_sw_write_mask & ( i_sw_write_data)
-          : i_sw_write_mask & (~i_sw_write_data);
-    end
-    else if (r_trigger != {WIDTH{1'b0}}) begin
-      r_trigger <= {WIDTH{1'b0}};
+    else begin
+      for (i = 0;i < WIDTH;i = i + 1) begin
+        if (i_sw_write_valid && i_sw_mask[i] && (i_sw_write_data[i] == TRIGGER_VALUE)) begin
+          r_trigger[i]  <= 1'b1;
+        end
+        else if (r_trigger[i]) begin
+          r_trigger[i]  <= 1'b0;
+        end
+      end
     end
   end
 endmodule
