@@ -342,7 +342,7 @@ module rggen_bit_field #(
         else if ((HW_ACCESS != 3'b000) && w_hw_update) begin
           r_value <=
             get_hw_next_value(
-              r_value, i_hw_write_enable, i_sw_write_data,
+              r_value, i_hw_write_enable, i_hw_write_data,
               i_hw_set, i_hw_clear
             );
         end
@@ -359,7 +359,7 @@ module rggen_bit_field #(
         else if ((HW_ACCESS != 3'b000) && w_hw_update) begin
           r_value <=
             get_hw_next_value(
-              r_value, i_hw_write_enable, i_sw_write_data,
+              r_value, i_hw_write_enable, i_hw_write_data,
               i_hw_set, i_hw_clear
             );
         end
