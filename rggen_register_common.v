@@ -6,7 +6,8 @@ module rggen_register_common #(
   parameter OFFSET_ADDRESS        = {ADDRESS_WIDTH{1'b0}},
   parameter BUS_WIDTH             = 32,
   parameter DATA_WIDTH            = BUS_WIDTH,
-  parameter USE_ADDITIONAL_MATCH  = 1'b0
+  parameter USE_ADDITIONAL_MATCH  = 1'b0,
+  parameter USE_ADDITIONAL_MASK   = 1'b0
 )(
   input                       i_clk,
   input                       i_rst_n,
@@ -21,6 +22,7 @@ module rggen_register_common #(
   output  [BUS_WIDTH-1:0]     o_register_read_data,
   output  [DATA_WIDTH-1:0]    o_register_value,
   input                       i_additional_match,
+  input   [BUS_WIDTH-1:0]     i_additional_mask,
   output                      o_bit_field_write_valid,
   output                      o_bit_field_read_valid,
   output  [DATA_WIDTH-1:0]    o_bit_field_mask,
@@ -91,23 +93,32 @@ module rggen_register_common #(
 
   assign  w_frontdoor_valid = i_register_valid && w_active;
   assign  w_write[0]        = i_register_access[0];
-  assign  w_mask[0]         = get_mask(w_match, i_register_strobe);
+  assign  w_mask[0]         = get_mask(w_match, i_register_strobe, i_additional_mask);
   assign  w_write_data[0]   = {WORDS{i_register_write_data}};
 
   function automatic [DATA_WIDTH-1:0] get_mask;
     input [WORDS-1:0]     match;
     input [BUS_WIDTH-1:0] strobe;
+    input [BUS_WIDTH-1:0] additional_mask;
 
     integer               i;
+    reg [BUS_WIDTH-1:0]   word_mask;
     reg [DATA_WIDTH-1:0]  mask;
   begin
+    if (USE_ADDITIONAL_MASK) begin
+      word_mask = strobe & additional_mask;
+    end
+    else begin
+      word_mask = strobe;
+    end
+
     if (BUS_WIDTH == DATA_WIDTH) begin
-      mask  = strobe;
+      mask  = word_mask;
     end
     else begin
       for (i = 0;i < WORDS;i = i + 1) begin
         if (match[i]) begin
-          mask[BUS_WIDTH*i+:BUS_WIDTH]  = strobe;
+          mask[BUS_WIDTH*i+:BUS_WIDTH]  = word_mask;
         end
         else begin
           mask[BUS_WIDTH*i+:BUS_WIDTH]  = {BUS_WIDTH{1'b0}};

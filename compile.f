@@ -8,6 +8,7 @@ ${RGGEN_VERILOG_RTL_ROOT}/rggen_register_common.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_default_register.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_external_register.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_indirect_register.v
+${RGGEN_VERILOG_RTL_ROOT}/rggen_maskable_register.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_adapter_common.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_apb_adapter.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_apb_bridge.v

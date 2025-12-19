@@ -10,6 +10,7 @@ include_directory '.'
   'rggen_default_register.v',
   'rggen_external_register.v',
   'rggen_indirect_register.v',
+  'rggen_maskable_register.v',
   'rggen_adapter_common.v',
   'rggen_apb_adapter.v',
   'rggen_apb_bridge.v',
