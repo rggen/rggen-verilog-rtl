@@ -2,6 +2,7 @@
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_or_reducer.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_mux.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_bit_field.v
+${RGGEN_VERILOG_RTL_ROOT}/rggen_bit_field_counter.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_bit_field_w01trg.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_address_decoder.v
 ${RGGEN_VERILOG_RTL_ROOT}/rggen_register_common.v

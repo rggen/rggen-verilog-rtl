@@ -19,21 +19,7 @@ module rggen_address_decoder #(
   localparam                  BEGIN_ADDRESS_ALL_0 = BEGIN_ADDRESS == {(WIDTH-LSB){1'b0}};
   localparam                  END_ADDRESS_ALL_1   = END_ADDRESS   == {(WIDTH-LSB){1'b1}};
 
-  function automatic integer clog2;
-    input integer n;
-
-    integer result;
-    integer value;
-  begin
-    value   = n - 1;
-    result  = 0;
-    while (value > 0) begin
-      result  = result + 1;
-      value   = value >> 1;
-    end
-    clog2 = result;
-  end
-  endfunction
+  `include  "rggen_clog2.vh"
 
   function automatic [WIDTH-LSB-1:0] calc_end_address;
     input [WIDTH-1:0] start_address;

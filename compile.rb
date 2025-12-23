@@ -4,6 +4,7 @@ include_directory '.'
   'rggen_or_reducer.v',
   'rggen_mux.v',
   'rggen_bit_field.v',
+  'rggen_bit_field_counter.v',
   'rggen_bit_field_w01trg.v',
   'rggen_address_decoder.v',
   'rggen_register_common.v',
